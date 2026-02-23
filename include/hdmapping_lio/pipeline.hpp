@@ -41,8 +41,8 @@ private:
 
     LookupStats lookup_stats_;
 
-    std::vector<Eigen::Affine3d> prev_trajectory_;
-    std::vector<Eigen::Affine3d> prev_prev_trajectory_;
+    WorkerData prev_wd_;
+    WorkerData prev_prev_wd_;
 
     Eigen::Affine3d latest_pose_ = Eigen::Affine3d::Identity();
     double prev_imu_timestamp_ = 0.0;
