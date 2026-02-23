@@ -159,124 +159,44 @@ void Pipeline::processChunk()
     else
         intermediate_points = std::move(chunk_points);
 
+    std::atomic<float> progress{0.0f};
+    std::atomic<bool> pause{false};
+    int64_t total_iterations = 0;
+    double total_opt_time = 0.0;
+    double ts_failure = 0.0;
+
     if (!initialized_) {
         params_.m_g = wd.intermediate_trajectory[0];
+        params_.working_directory_preview = "/tmp";
 
-        Eigen::Affine3d m_last = params_.m_g;
-        auto tmp = wd.intermediate_trajectory;
-        wd.intermediate_trajectory[0] = m_last;
-        for (size_t k = 1; k < tmp.size(); k++) {
-            Eigen::Affine3d m_update = tmp[k - 1].inverse() * tmp[k];
-            m_last = m_last * m_update;
-            wd.intermediate_trajectory[k] = m_last;
-        }
-        wd.intermediate_trajectory_motion_model = wd.intermediate_trajectory;
-
-        auto pp = params_.initial_points;
-        for (auto& p : pp)
-            p.point = params_.m_g * p.point;
-
-        {
-            std::lock_guard<std::mutex> lock(params_.mutex_buckets_indoor);
-            std::lock_guard<std::mutex> lock2(params_.mutex_buckets_outdoor);
-            if (params_.ablation_study_use_hierarchical_rgd) {
-                update_rgd_hierarchy(
-                    params_.in_out_params_indoor, params_.buckets_indoor, pp,
-                    params_.m_g.translation(),
-                    params_.in_out_params_outdoor, params_.buckets_outdoor,
-                    lookup_stats_);
-            } else {
-                update_rgd(params_.in_out_params_indoor, params_.buckets_indoor, pp,
-                    params_.m_g.translation(), &lookup_stats_.indoor_lookups);
-            }
-        }
+        std::vector<WorkerData> init_vec = {wd};
+        initialize_lidar_odometry(init_vec, params_, ts_failure,
+            progress, pause, false, lookup_stats_);
+        wd = std::move(init_vec[0]);
 
         initialized_ = true;
         chunk_index_ = 0;
     } else {
         chunk_index_++;
 
-        Eigen::Affine3d m_last = prev_trajectory_.back();
-        auto tmp = wd.intermediate_trajectory;
-        wd.intermediate_trajectory[0] = m_last;
-        for (size_t k = 1; k < tmp.size(); k++) {
-            Eigen::Affine3d m_update = tmp[k - 1].inverse() * tmp[k];
-            m_last = m_last * m_update;
-            wd.intermediate_trajectory[k] = m_last;
-        }
-
-        if (chunk_index_ > 1 && params_.use_motion_from_previous_step &&
-            !prev_prev_trajectory_.empty()) {
-            Eigen::Vector3d mean_shift = prev_trajectory_.back().translation() -
-                prev_prev_trajectory_.back().translation();
-            mean_shift /= static_cast<double>(prev_trajectory_.size());
-
-            if (mean_shift.norm() > 1.0)
-                mean_shift = Eigen::Vector3d::Zero();
-
-            for (size_t tr = 0; tr < wd.intermediate_trajectory.size(); tr++)
-                wd.intermediate_trajectory[tr].translation() += mean_shift * static_cast<double>(tr);
-        }
-
-        wd.intermediate_trajectory_motion_model = wd.intermediate_trajectory;
+        process_worker_step_1(wd, prev_wd_, prev_prev_wd_, params_,
+            pause, chunk_index_, false, lookup_stats_, false,
+            total_iterations, total_opt_time, acc_distance_,
+            1, progress, ts_failure);
     }
 
     auto tmp_trajectory = wd.intermediate_trajectory;
+    wd.intermediate_trajectory_motion_model = wd.intermediate_trajectory;
+
+    int iter_end = 0;
     double delta = 100000.0;
     double lm_factor = 1.0;
 
-    auto t0 = std::chrono::steady_clock::now();
-
-    for (int iter = 0; iter < params_.nr_iter; iter++) {
-        std::lock_guard<std::mutex> lock(params_.mutex_buckets_indoor);
-        std::lock_guard<std::mutex> lock2(params_.mutex_buckets_outdoor);
-
-        delta = 100000.0;
-        optimize_lidar_odometry(
-            intermediate_points,
-            wd.intermediate_trajectory,
-            wd.intermediate_trajectory_motion_model,
-            params_.in_out_params_indoor,
-            params_.buckets_indoor,
-            params_.in_out_params_outdoor,
-            params_.buckets_outdoor,
-            params_.useMultithread,
-            params_.max_distance_lidar,
-            delta,
-            lm_factor,
-            params_.motion_model_correction,
-            params_.lidar_odometry_motion_model_x_1_sigma_m,
-            params_.lidar_odometry_motion_model_y_1_sigma_m,
-            params_.lidar_odometry_motion_model_z_1_sigma_m,
-            params_.lidar_odometry_motion_model_om_1_sigma_deg,
-            params_.lidar_odometry_motion_model_fi_1_sigma_deg,
-            params_.lidar_odometry_motion_model_ka_1_sigma_deg,
-            params_.lidar_odometry_motion_model_fix_origin_x_1_sigma_m,
-            params_.lidar_odometry_motion_model_fix_origin_y_1_sigma_m,
-            params_.lidar_odometry_motion_model_fix_origin_z_1_sigma_m,
-            params_.lidar_odometry_motion_model_fix_origin_om_1_sigma_deg,
-            params_.lidar_odometry_motion_model_fix_origin_fi_1_sigma_deg,
-            params_.lidar_odometry_motion_model_fix_origin_ka_1_sigma_deg,
-            params_.ablation_study_use_planarity,
-            params_.ablation_study_use_norm,
-            params_.ablation_study_use_hierarchical_rgd,
-            params_.ablation_study_use_view_point_and_normal_vectors,
-            lookup_stats_,
-            params_.ablation_study_use_threshold_outer_rgd,
-            delta,
-            params_.convergence_delta_threshold_outer_rgd);
-
-        if (delta < params_.convergence_delta_threshold)
-            break;
-
-        if (iter % 10 == 0 && iter > 0)
-            lm_factor *= 10.0;
-
-        if (params_.real_time_threshold_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() >
-                params_.real_time_threshold_seconds)
-            break;
-    }
+    process_worker_step_lidar_odometry_core(wd, prev_wd_, prev_prev_wd_,
+        params_, pause, chunk_index_, false, lookup_stats_, false,
+        total_iterations, total_opt_time, acc_distance_,
+        1, progress, ts_failure,
+        intermediate_points, iter_end, delta, lm_factor);
 
     double acc_distance_prev = acc_distance_;
     acc_distance_ += (wd.intermediate_trajectory.front().inverse() *
@@ -292,60 +212,14 @@ void Pipeline::processChunk()
             points_global_.push_back(pp);
         }
 
-        if (acc_distance_ > params_.sliding_window_trajectory_length_threshold) {
-            if (params_.reference_points.empty()) {
-                params_.buckets_indoor.clear();
-                params_.buckets_outdoor.clear();
-            }
-
-            std::vector<Point3Di> points_global_new;
-            points_global_new.reserve(points_global_.size() / 2 + 1);
-            for (size_t k = points_global_.size() / 2; k < points_global_.size(); k++)
-                points_global_new.emplace_back(points_global_[k]);
-
-            acc_distance_ = 0.0;
-            points_global_ = std::move(points_global_new);
-
-            std::lock_guard<std::mutex> lock(params_.mutex_buckets_indoor);
-            std::lock_guard<std::mutex> lock2(params_.mutex_buckets_outdoor);
-            if (params_.ablation_study_use_hierarchical_rgd) {
-                update_rgd_hierarchy(
-                    params_.in_out_params_indoor, params_.buckets_indoor, points_global_,
-                    wd.intermediate_trajectory[0].translation(),
-                    params_.in_out_params_outdoor, params_.buckets_outdoor,
-                    lookup_stats_);
-            } else {
-                update_rgd(params_.in_out_params_indoor, params_.buckets_indoor, points_global_,
-                    wd.intermediate_trajectory[0].translation(), &lookup_stats_.indoor_lookups);
-            }
-        } else {
-            std::vector<Point3Di> pg;
-            pg.reserve(intermediate_points.size());
-            for (const auto& p : intermediate_points) {
-                Point3Di pp = p;
-                pp.point = wd.intermediate_trajectory[p.index_pose] * pp.point;
-                pg.push_back(pp);
-            }
-
-            std::lock_guard<std::mutex> lock(params_.mutex_buckets_indoor);
-            std::lock_guard<std::mutex> lock2(params_.mutex_buckets_outdoor);
-            if (params_.ablation_study_use_hierarchical_rgd) {
-                update_rgd_hierarchy(
-                    params_.in_out_params_indoor, params_.buckets_indoor, pg,
-                    wd.intermediate_trajectory[0].translation(),
-                    params_.in_out_params_outdoor, params_.buckets_outdoor,
-                    lookup_stats_);
-            } else {
-                update_rgd(params_.in_out_params_indoor, params_.buckets_indoor, pg,
-                    wd.intermediate_trajectory[0].translation(), &lookup_stats_.indoor_lookups);
-            }
-        }
+        process_worker_step_update_rgd_after(acc_distance_, params_,
+            points_global_, wd, lookup_stats_, intermediate_points);
     }
 
     latest_pose_ = wd.intermediate_trajectory.back();
 
-    prev_prev_trajectory_ = std::move(prev_trajectory_);
-    prev_trajectory_ = std::move(wd.intermediate_trajectory);
+    prev_prev_wd_ = std::move(prev_wd_);
+    prev_wd_ = std::move(wd);
 }
 
 }
