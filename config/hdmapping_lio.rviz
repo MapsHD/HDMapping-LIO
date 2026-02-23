@@ -1,0 +1,89 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 0
+    Name: Displays
+    Property Tree Widget:
+      Expanded: ~
+      Splitter Ratio: 0.5
+    Tree Height: 300
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Name: Origin
+      Length: 1
+      Radius: 0.05
+      Reference Frame: odom
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: Map
+      Topic:
+        Value: /hdmapping/map
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+      Size (Pixels): 2
+      Size (m): 0.03
+      Style: Points
+      Color Transformer: AxisColor
+      Axis: Z
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Enabled: true
+      Name: Trajectory
+      Topic:
+        Value: /hdmapping/trajectory
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+      Line Style: Billboards
+      Line Width: 0.08
+      Color: 25; 100; 255
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 30
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.5
+      Target Frame: "<Fixed Frame>"
+      Value: Orbit (rviz)
+      Yaw: 0
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 800
+  Hide Left Dock: false
+  Hide Right Dock: true
+  Views:
+    collapsed: true
+  Width: 1200
+  X: 100
+  Y: 100
