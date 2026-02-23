@@ -1,0 +1,41 @@
+hdmapping_lio_node:
+  ros__parameters:
+    # topic name for IMU sensor data
+    imu_topic: "/imu"
+    # topic name for LiDAR point cloud
+    lidar_topic: "/points"
+    # parent frame for odometry
+    odom_frame: "odom"
+    # child frame attached to the sensor
+    base_frame: "base_link"
+    # how often to publish the map point cloud [Hz], 0 disables
+    map_publish_rate: 1.0
+
+    # minimum distance from sensor center - points closer are discarded [m]
+    filter_threshold_xy_inner: 0.3
+    # maximum distance from sensor center - points further are discarded [m]
+    filter_threshold_xy_outer: 70.0
+    # spatial decimation bucket size - keeps one point per cube of this size [m]
+    decimation: 0.01
+    # Madgwick AHRS filter gain - higher values trust accelerometer more
+    ahrs_gain: 0.5
+
+    # max optimization iterations per chunk (GUI default: 1000)
+    nr_iter: 1000
+    # time limit per chunk optimization [s] - breaks early if exceeded
+    real_time_threshold_seconds: 10.0
+    # number of IMU poses per processing chunk
+    threshold_nr_poses: 20
+    # NDT voxel resolution for fine (indoor) grid [m]
+    ndt_resolution_indoor: 0.1
+    # NDT voxel resolution for coarse (outdoor) grid [m]
+    ndt_resolution_outdoor: 0.3
+    # sliding window length - NDT map is rebuilt when traversed distance exceeds this [m]
+    sliding_window_trajectory_length_threshold: 200.0
+    # max LiDAR range used in optimization [m]
+    max_distance_lidar: 70.0
+
+    # motion model position uncertainty (1-sigma) [m]
+    motion_model_sigma_xyz: 0.0005
+    # motion model rotation uncertainty (1-sigma) [deg]
+    motion_model_sigma_omfika: 0.01
