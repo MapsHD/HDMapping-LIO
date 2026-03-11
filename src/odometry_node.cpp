@@ -17,12 +17,22 @@ OdometryNode::OdometryNode(const rclcpp::NodeOptions& options)
     lio_ = std::make_unique<Pipeline>();
     auto& p = lio_->params();
 
+    auto ahrs_convention = declare_parameter("ahrs_convention", "NWU");
+    if (ahrs_convention == "NED") {
+        lio_->setConvention(FusionConventionNed);
+    } else if (ahrs_convention == "ENU") {
+        lio_->setConvention(FusionConventionEnu);
+    } else {
+        lio_->setConvention(FusionConventionNwu);
+    }
+    RCLCPP_INFO(get_logger(), "AHRS convention: %s", ahrs_convention.c_str());
+
     p.filter_threshold_xy_inner = declare_parameter("filter_threshold_xy_inner", 0.3);
     p.filter_threshold_xy_outer = declare_parameter("filter_threshold_xy_outer", 70.0);
     p.decimation = declare_parameter("decimation", 0.01);
     p.ahrs_gain = declare_parameter("ahrs_gain", 0.5);
     p.nr_iter = declare_parameter("nr_iter", 1000);
-    p.real_time_threshold_seconds = declare_parameter("real_time_threshold_seconds", 10.0);
+    p.real_time_threshold_seconds = declare_parameter("real_time_threshold_seconds", 0.07);
     p.threshold_nr_poses = declare_parameter("threshold_nr_poses", 20);
 
     double res_indoor = declare_parameter("ndt_resolution_indoor", 0.1);

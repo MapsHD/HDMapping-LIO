@@ -17,6 +17,8 @@ public:
 
     LidarOdometryParams& params() { return params_; }
 
+    void setConvention(FusionConvention convention) { ahrs_.settings.convention = convention; }
+
     void addImu(double timestamp, const FusionVector& gyro, const FusionVector& accel);
 
     bool addPointCloud(double timestamp, std::vector<Point3Di> points);
