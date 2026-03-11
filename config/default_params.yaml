@@ -17,13 +17,15 @@ hdmapping_lio_node:
     filter_threshold_xy_outer: 70.0
     # spatial decimation bucket size - keeps one point per cube of this size [m]
     decimation: 0.01
+    # AHRS convention: NWU (North-West-Up), ENU (East-North-Up), NED (North-East-Down)
+    ahrs_convention: "NWU"
     # Madgwick AHRS filter gain - higher values trust accelerometer more
     ahrs_gain: 0.5
 
     # max optimization iterations per chunk (GUI default: 1000)
     nr_iter: 1000
     # time limit per chunk optimization [s] - breaks early if exceeded
-    real_time_threshold_seconds: 10.0
+    real_time_threshold_seconds: 0.07
     # number of IMU poses per processing chunk
     threshold_nr_poses: 20
     # NDT voxel resolution for fine (indoor) grid [m]
