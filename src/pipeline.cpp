@@ -1,5 +1,5 @@
 #include <hdmapping_lio/pipeline.hpp>
-#include <transformations.h>
+#include <Core/transformations.h>
 
 namespace hdmapping_lio {
 
@@ -7,13 +7,13 @@ Pipeline::Pipeline()
 {
     FusionAhrsInitialise(&ahrs_);
     ahrs_.settings.convention = FusionConventionNwu;
-    ahrs_.settings.gain = static_cast<float>(params_.ahrs_gain);
+    ahrs_.settings.gain = static_cast<float>(params_.fusion_gain);
 }
 
 void Pipeline::addImu(double timestamp, const FusionVector& gyro, const FusionVector& accel)
 {
     if (first_imu_) {
-        ahrs_.settings.gain = static_cast<float>(params_.ahrs_gain);
+        ahrs_.settings.gain = static_cast<float>(params_.fusion_gain);
         FusionAhrsUpdateNoMagnetometer(&ahrs_, gyro, accel, 1.0f / 200.0f);
         first_imu_ = false;
     } else {

@@ -31,6 +31,8 @@ add_subdirectory(${HDMAPPING_3RDPARTY}/LASzip)
 
 add_subdirectory(${HDMAPPING_3RDPARTY}/Fusion/Fusion)
 
+add_subdirectory(${HDMAPPING_3RDPARTY}/vqf/vqf/cpp)
+
 set(SPDLOG_BUILD_PIC ON CACHE BOOL "" FORCE)
 add_subdirectory(${HDMAPPING_3RDPARTY}/spdlog)
 
@@ -123,12 +125,14 @@ target_include_directories(hdmapping_lio_algo PUBLIC
   ${HDMAPPING_3RDPARTY}/LASzip/include
   ${HDMAPPING_3RDPARTY}/observation_equations/codes
   ${HDMAPPING_3RDPARTY}/Fusion/Fusion
+  ${HDMAPPING_3RDPARTY}/vqf/vqf/cpp
   ${HDMAPPING_EXTERNAL}/include
 )
 
 target_link_libraries(hdmapping_lio_algo PUBLIC
   hdmapping_core_no_gui
   Fusion
+  vqf
   unordered_dense::unordered_dense
   spdlog::spdlog
   UTL::include
