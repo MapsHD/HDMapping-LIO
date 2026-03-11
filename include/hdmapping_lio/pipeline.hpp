@@ -6,7 +6,7 @@
 #include <mutex>
 #include <Eigen/Dense>
 #include <Fusion.h>
-#include <structures.h>
+#include <Core/structures.h>
 #include <lidar_odometry_utils.h>
 
 namespace hdmapping_lio {

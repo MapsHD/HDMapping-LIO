@@ -6,7 +6,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <Eigen/Dense>
-#include <structures.h>
+#include <Core/structures.h>
 #include <Fusion.h>
 
 namespace hdmapping_lio {
