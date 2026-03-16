@@ -163,7 +163,7 @@ geometry_msgs::msg::TransformStamped affine_to_transform(
 sensor_msgs::msg::PointCloud2 point3di_to_pointcloud2(
     const std::vector<Point3Di>& points,
     const rclcpp::Time& stamp,
-    const std::string& frame_id)
+    const std::string& frame_id, int max_points)
 {
     sensor_msgs::msg::PointCloud2 msg;
     msg.header.stamp = stamp;
@@ -175,14 +175,20 @@ sensor_msgs::msg::PointCloud2 point3di_to_pointcloud2(
         "y", 1, sensor_msgs::msg::PointField::FLOAT32,
         "z", 1, sensor_msgs::msg::PointField::FLOAT32,
         "intensity", 1, sensor_msgs::msg::PointField::FLOAT32);
-    modifier.resize(points.size());
+    const size_t point_skip = points.size() > static_cast<size_t>(max_points) ? points.size() / max_points : 1;
+    const size_t output_points = (points.size() + point_skip - 1) / point_skip;
+    modifier.resize(output_points);
 
     sensor_msgs::PointCloud2Iterator<float> it_x(msg, "x");
     sensor_msgs::PointCloud2Iterator<float> it_y(msg, "y");
     sensor_msgs::PointCloud2Iterator<float> it_z(msg, "z");
     sensor_msgs::PointCloud2Iterator<float> it_i(msg, "intensity");
 
-    for (const auto& p : points) {
+    
+    for (size_t i = 0; i < output_points; ++i) {
+        const int idx = i * point_skip;
+        assert(idx < points.size());
+        const Point3Di& p = points[idx];
         *it_x = static_cast<float>(p.point.x());
         *it_y = static_cast<float>(p.point.y());
         *it_z = static_cast<float>(p.point.z());
