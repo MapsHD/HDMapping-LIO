@@ -34,6 +34,6 @@ geometry_msgs::msg::TransformStamped affine_to_transform(
 sensor_msgs::msg::PointCloud2 point3di_to_pointcloud2(
     const std::vector<Point3Di>& points,
     const rclcpp::Time& stamp,
-    const std::string& frame_id);
+    const std::string& frame_id, int max_points = 2'000'000);
 
 }
